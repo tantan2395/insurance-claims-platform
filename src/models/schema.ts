@@ -1,6 +1,5 @@
-import { pgTable, text, timestamp, uuid, varchar, integer, boolean, jsonb, decimal, index, uniqueIndex, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, varchar, integer, boolean, jsonb, decimal, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
-import { createId } from '@paralleldrive/cuid2';
 
 export const organizations = pgTable('organizations', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -107,7 +106,7 @@ export const claims = pgTable('claims', {
         statusIdx: index('claim_status_idx').on(table.status),
         claimNumberIdx: uniqueIndex('claim_number_idx').on(table.claimNumber),
         dateRangeIdx: index('date_range_idx').on(table.submissionDate),
-        processorIdx: index('claim_processor_idx').on(table.assignedProcessorId),
+        processorIdx: index('processor_idx').on(table.assignedProcessorId),
         compositeIdx: index('org_status_date_idx').on(table.organizationId, table.status, table.submissionDate),
     };
 });
