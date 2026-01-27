@@ -1,12 +1,15 @@
 import { BaseRepository } from './base.repository';
 import { patients, Patient, users } from '../models/schema';
 import { db } from '../config/database';
-import { eq, and, or, between, ilike, count, isNotNull } from 'drizzle-orm';
+import { eq, and, or, ilike, count, isNotNull, sql } from 'drizzle-orm';
 import { TenantContext } from '../types';
 
 export class PatientRepository extends BaseRepository<typeof patients> {
     protected table = patients;
-    protected tenantIdField = 'organizationId';
+
+    protected get tenantIdField(): keyof typeof patients['_']['columns'] {
+        return 'organizationId';
+    }
 
     constructor(tenantContext: TenantContext) {
         super(tenantContext);
@@ -83,13 +86,18 @@ export class PatientRepository extends BaseRepository<typeof patients> {
             offset?: number;
         } = {}
     ): Promise<Patient[]> {
+
+        const startDateStr = startDate.toISOString().split('T')[0];
+        const endDateStr = endDate.toISOString().split('T')[0];
+
         return db
             .select()
             .from(this.table)
             .where(
                 and(
                     this.withTenant(),
-                    between(this.table.dateOfBirth, startDate, endDate)
+                    sql`${this.table.dateOfBirth} >= ${startDateStr}`,
+                    sql`${this.table.dateOfBirth} <= ${endDateStr}`
                 )
             )
             .limit(options.limit || 10)
@@ -109,7 +117,7 @@ export class PatientRepository extends BaseRepository<typeof patients> {
                 this.withTenant(),
                 eq(this.table.isActive, true)
             ));
-            
+
 
         const [withUserAccount] = await db
             .select({ count: count() })

@@ -1,7 +1,7 @@
 import { Organization } from '../models/schema';
 import { db } from '../config/database';
 import { organizations, users } from '../models/schema';
-import { count, eq, sql } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import {
   ConflictError,
   ValidationError,

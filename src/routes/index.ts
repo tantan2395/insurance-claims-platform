@@ -2,9 +2,9 @@ import { RequestHandler, Router } from 'express';
 import { tenantRateLimiter } from '../middleware/tenant.middleware';
 import { requireAuth } from '../middleware/auth.middleware';
 
-import { authRoutes } from '../controller/auth.controller';
-import { organizationRoutes } from '../controller/organization.controller';
-import { patientRoutes } from '../controller/patient.controller';
+import { authRoutes } from '../controllers/auth.controller';
+import { organizationRoutes } from '../controllers/organization.controller';
+import { patientRoutes } from '../controllers/patient.controller';
 
 const router = Router();
 
@@ -40,5 +40,8 @@ router.get('/patients/stats', patientRoutes.getPatientStats);
 router.get('/patients/:id', patientRoutes.getPatient);
 router.patch('/patients/:id', patientRoutes.updatePatient);
 router.post('/patients/:id/link-user', patientRoutes.linkPatientToUser);
+
+router.post('/patient-status', patientRoutes.createPatientStatusChange);
+router.get('/patient-status/history/:patientId', patientRoutes.getPatientStatusHistory);
 
 export default router;

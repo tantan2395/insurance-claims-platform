@@ -1,6 +1,5 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../types';
-import { AuthService } from './auth.service';
 import { PatientService } from './patient.service';
 
 export function injectServices() {

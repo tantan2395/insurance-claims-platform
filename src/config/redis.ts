@@ -3,7 +3,7 @@ import env from '.';
 import { logger } from '../utils/logger';
 
 export const redis = new Redis(env.REDIS_URL, {
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null, // Required for BullMQ workers
   retryStrategy: (times) => {
     const delay = Math.min(times * 50, 2000);
     return delay;
@@ -15,6 +15,8 @@ export const redis = new Redis(env.REDIS_URL, {
     }
     return false;
   },
+  enableReadyCheck: false, // Recommended for BullMQ
+  maxLoadingRetryTime: 10000,
 });
 
 redis.on('connect', () => {
@@ -23,6 +25,14 @@ redis.on('connect', () => {
 
 redis.on('error', (err) => {
   logger.error('Redis connection error:', err);
+});
+
+redis.on('ready', () => {
+  logger.info('Redis is ready');
+});
+
+redis.on('reconnecting', () => {
+  logger.warn('Redis is reconnecting');
 });
 
 export async function setupRedis() {
