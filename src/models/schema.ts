@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, varchar, integer, boolean, jsonb, decimal, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, varchar, integer, boolean, jsonb, decimal, index, uniqueIndex, date } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const organizations = pgTable('organizations', {
@@ -38,7 +38,7 @@ export const patients = pgTable('patients', {
     userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
     firstName: varchar('first_name', { length: 100 }).notNull(),
     lastName: varchar('last_name', { length: 100 }).notNull(),
-    dateOfBirth: timestamp('date_of_birth').notNull(),
+    dateOfBirth: varchar('date_of_birth').notNull(),
     email: varchar('email', { length: 255 }),
     phone: varchar('phone', { length: 20 }),
     address: text('address'),
