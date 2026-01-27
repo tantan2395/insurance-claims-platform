@@ -7,8 +7,9 @@ import { rateLimit } from 'express-rate-limit';
 import env from './config';
 import { logger } from './utils/logger';
 import { setupDatabase } from './config/database';
-import { errorHandler } from './middleware/error.middleware';
+import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import routes from './routes';
+import { setupRedis } from './config/redis';
 
 const app = express();
 
@@ -53,24 +54,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api', routes);
 
-// Health check
-app.get('/health', (_req, res) => {
-    res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        environment: env.NODE_ENV,
-    });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-    res.status(404).json({
-        error: 'Not Found',
-        message: `Cannot ${req.method} ${req.originalUrl}`,
-    });
-});
-
-
+app.use(notFoundHandler);
 // Error handling
 app.use(errorHandler);
 
@@ -79,14 +63,30 @@ async function startServer() {
         // Initialize database
         await setupDatabase();
 
+        // Initialize Redis
+        await setupRedis();
+
         app.listen(env.PORT, () => {
             logger.info(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
+            logger.info(`Database connected: ${env.DATABASE_URL?.split('@')[1]}`);
+            logger.info(`Redis connected: ${env.REDIS_URL}`);
         });
     } catch (error) {
         logger.error('Failed to start server:', error);
         process.exit(1);
     }
 }
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    logger.info('SIGTERM received, shutting down gracefully');
+    process.exit(0);
+});
+
+process.on('SIGINT', () => {
+    logger.info('SIGINT received, shutting down gracefully');
+    process.exit(0);
+});
 
 startServer();
 

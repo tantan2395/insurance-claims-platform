@@ -117,8 +117,16 @@ export class OrganizationController {
     listOrganizations = asyncHandler(async (req: Request, res: Response) => {
         const { isActive, limit, offset } = req.query;
 
+        let isActiveBool: boolean | undefined;
+        if (isActive === 'true') {
+            isActiveBool = true;
+        } else if (isActive === 'false') {
+            isActiveBool = false;
+        }
+
+
         const result = await this.organizationService.listOrganizations({
-            isActive: isActive as boolean | undefined,
+            isActive: isActiveBool,
             limit: limit ? parseInt(limit as string) : undefined,
             offset: offset ? parseInt(offset as string) : undefined,
         });
@@ -177,7 +185,7 @@ export class OrganizationController {
 function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
     // a quick simple check or environment variable for super admin role
     const superAdminToken = req.headers['x-super-admin-token'];
-    
+
     if (superAdminToken !== process.env.SUPER_ADMIN_TOKEN || !process.env.SUPER_ADMIN_TOKEN) {
         res.status(403).json({
             success: false,

@@ -1,13 +1,16 @@
 import { BaseRepository } from './base.repository';
 import { users, User } from '../models/schema';
 import { db } from '../config/database';
-import { eq, and, or, SQL } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { TenantContext } from '../types';
 import { NotFoundError } from '../utils/errors';
 
 export class UserRepository extends BaseRepository<typeof users> {
   protected table = users;
-  protected tenantIdField = 'organizationId';
+
+  protected get tenantIdField(): keyof typeof users['_']['columns'] {
+    return 'organizationId';
+  }
 
   constructor(tenantContext: TenantContext) {
     super(tenantContext);

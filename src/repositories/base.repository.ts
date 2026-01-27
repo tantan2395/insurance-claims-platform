@@ -6,14 +6,16 @@ import { TenantContext } from '../types';
 
 export abstract class BaseRepository<T extends PgTable> {
     protected abstract table: T;
-    protected abstract tenantIdField: keyof T['_']['columns'];
+    protected abstract get tenantIdField(): keyof T['_']['columns'];
 
     constructor(protected readonly tenantContext: TenantContext) { }
 
     // Helper to ensure tenant context is always used
     protected withTenant<C extends SQL>(condition?: C): SQL {
+
+        const tableWithAny = this.table as any;
         const tenantCondition = eq(
-            this.table[this.tenantIdField as string],
+            tableWithAny[this.tenantIdField as string],
             this.tenantContext.organizationId
         );
 

@@ -11,6 +11,7 @@ import { eq, desc } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 import { PatientRepository } from '../repositories';
+import { queueService } from './queue.service';
 
 export class PatientService {
     private patientRepository: PatientRepository;
@@ -51,7 +52,7 @@ export class PatientService {
             }
         }
 
-       
+
         // Create patient
         const patient = await this.patientRepository.create({
             firstName,
@@ -160,8 +161,8 @@ export class PatientService {
             throw new Error('Failed to create patient status change');
         }
 
-        // TODO: Trigger appropriate background job based on status type
-        // await this.triggerStatusChangeJob(statusChange);
+        // Trigger appropriate background job based on status type
+        await this.triggerStatusChangeJob(statusChange);
 
         logger.info('Patient status change created', {
             patientId,
@@ -270,7 +271,7 @@ export class PatientService {
 
             case 'patient':
                 // Patients can only access their own record
-                const userPatientId = this.tenantContext.user.metadata?.patientId;
+                const userPatientId = (this.tenantContext.user as any).metadata?.patientId;
                 if (patientId !== userPatientId && patient.userId !== this.tenantContext.userId) {
                     throw new ForbiddenError('You can only access your own patient record');
                 }
@@ -281,5 +282,55 @@ export class PatientService {
         }
     }
 
- 
+    private async triggerStatusChangeJob(
+        statusChange: PatientStatusChange
+    ): Promise<void> {
+        const jobData = {
+            patientId: statusChange.patientId,
+            organizationId: statusChange.organizationId,
+            statusChangeId: statusChange.id,
+            statusType: statusChange.statusType,
+            occurredAt: statusChange.occurredAt,
+            details: statusChange.details,
+        };
+
+        let jobName: string;
+
+        switch (statusChange.statusType) {
+            case 'admission':
+                jobName = 'process-patient-admission';
+                break;
+            case 'discharge':
+                jobName = 'process-patient-discharge';
+                break;
+            case 'treatment':
+                jobName = 'process-treatment-initiated';
+                break;
+            default:
+                throw new ValidationError(`Invalid status type: ${statusChange.statusType}`);
+        }
+
+        // Add job to queue
+        const job = await queueService.addJob('claims-processing', jobName, jobData, {
+            jobId: `status-change-${statusChange.id}`,
+        });
+
+        // Update status change with job ID
+        await db
+            .update(patientStatusChanges)
+            .set({
+                triggeredJobId: job.id,
+                jobStatus: 'processing',
+            })
+            .where(eq(patientStatusChanges.id, statusChange.id));
+
+        logger.info('Status change job triggered', {
+            statusChangeId: statusChange.id,
+            jobId: job.id,
+            jobName,
+            patientId: statusChange.patientId,
+        });
+    }
+
+
 }

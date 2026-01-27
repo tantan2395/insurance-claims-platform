@@ -20,9 +20,6 @@ export async function setupDatabase() {
     await client`SELECT 1`;
     logger.info('Database connected successfully');
     
-    // Could run migrations here if needed
-    // await migrate(db, { migrationsFolder: './migrations' });
-    
     return db;
   } catch (error) {
     logger.error('Database connection failed:', error);

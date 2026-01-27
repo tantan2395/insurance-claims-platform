@@ -93,6 +93,7 @@ export const tenantRateLimiter = (options: {
         windowMs: options.windowMs || 15 * 60 * 1000, // 15 minutes
         max: options.max || 100, // limit each tenant to 100 requests per windowMs
         message: options.message || 'Too many requests from this tenant, please try again later.',
+        // @ts-ignore
         keyGenerator: (req: AuthenticatedRequest, _res) => {
             return req.tenant?.organizationId || req.ip;
         },

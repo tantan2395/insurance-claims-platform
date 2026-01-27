@@ -35,7 +35,7 @@ export interface AuthResponse {
 }
 
 export class AuthService {
-  constructor() {}
+  constructor() { }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const { email, password } = credentials;
@@ -228,7 +228,7 @@ export class AuthService {
       .update(users)
       .set({
         metadata: {
-          ...user.metadata,
+          ...(user.metadata as any),
           resetToken,
           resetTokenExpiry: resetTokenExpiry.toISOString(),
         },
@@ -243,7 +243,7 @@ export class AuthService {
   async resetPassword(resetToken: string, newPassword: string): Promise<void> {
     // Find user with valid reset token
     const allUsers = await db.select().from(users);
-    const user = allUsers.find(u =>
+    const user = allUsers.find((u: any) =>
       u.metadata?.resetToken === resetToken &&
       u.metadata?.resetTokenExpiry &&
       new Date(u.metadata.resetTokenExpiry) > new Date()
@@ -263,7 +263,7 @@ export class AuthService {
       .set({
         passwordHash: newPasswordHash,
         metadata: {
-          ...user.metadata,
+          ...(user.metadata as any),
           resetToken: null,
           resetTokenExpiry: null,
         },
@@ -300,7 +300,7 @@ export class AuthService {
     };
 
     return jwt.sign(payload, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN,
+      expiresIn: this.getTokenExpiration(),
     });
   }
 
