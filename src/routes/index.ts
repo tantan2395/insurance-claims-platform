@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.middleware';
 
 import { authRoutes } from '../controller/auth.controller';
 import { organizationRoutes } from '../controller/organization.controller';
+import { patientRoutes } from '../controller/patient.controller';
 
 const router = Router();
 
@@ -32,5 +33,12 @@ router.get('/organizations/:organizationId/validate-access', organizationRoutes.
 router.post('/auth/change-password', authRoutes.changePassword);
 router.get('/auth/profile', authRoutes.getProfile);
 router.post('/auth/logout', authRoutes.logout);
+
+router.post('/patients', patientRoutes.createPatient);
+router.get('/patients/search', patientRoutes.searchPatients);
+router.get('/patients/stats', patientRoutes.getPatientStats);
+router.get('/patients/:id', patientRoutes.getPatient);
+router.patch('/patients/:id', patientRoutes.updatePatient);
+router.post('/patients/:id/link-user', patientRoutes.linkPatientToUser);
 
 export default router;

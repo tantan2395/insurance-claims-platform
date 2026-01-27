@@ -161,7 +161,7 @@ export class OrganizationService {
     }
 
     // Deactivate organization and all its users
-    const [updated] = await db
+    const updated = await db
       .update(organizations)
       .set({
         isActive: false,
@@ -169,6 +169,10 @@ export class OrganizationService {
       })
       .where(eq(organizations.id, organizationId))
       .returning();
+
+    if (!updated[0]) {
+      throw new Error('Failed to deactivate organization');
+    }
 
     // Also deactivate all users in this organization
     await db
@@ -184,7 +188,7 @@ export class OrganizationService {
       organizationName: organization.name,
     });
 
-    return updated;
+    return updated[0];
   }
 
   async activateOrganization(organizationId: string): Promise<Organization> {
@@ -193,7 +197,7 @@ export class OrganizationService {
       throw new NotFoundError('Organization not found');
     }
 
-    const [updated] = await db
+    const updated = await db
       .update(organizations)
       .set({
         isActive: true,
@@ -201,6 +205,10 @@ export class OrganizationService {
       })
       .where(eq(organizations.id, organizationId))
       .returning();
+
+    if (!updated[0]) {
+      throw new Error('Failed to activate organization');
+    }
 
     await db
       .update(users)
@@ -215,7 +223,7 @@ export class OrganizationService {
       organizationName: organization.name,
     });
 
-    return updated;
+    return updated[0];
   }
 
   async findById(organizationId: string): Promise<Organization | null> {
