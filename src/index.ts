@@ -8,6 +8,7 @@ import env from './config';
 import { logger } from './utils/logger';
 import { setupDatabase } from './config/database';
 import { errorHandler } from './middleware/error.middleware';
+import routes from './routes';
 
 const app = express();
 
@@ -49,6 +50,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// Routes
+app.use('/api', routes);
+
 // Health check
 app.get('/health', (_req, res) => {
     res.json({
@@ -66,8 +70,6 @@ app.use('*', (req, res) => {
     });
 });
 
-
-// Routes
 
 // Error handling
 app.use(errorHandler);
