@@ -7,6 +7,7 @@ import { rateLimit } from 'express-rate-limit';
 import env from './config';
 import { logger } from './utils/logger';
 import { setupDatabase } from './config/database';
+import { errorHandler } from './middleware/error.middleware';
 
 const app = express();
 
@@ -69,6 +70,7 @@ app.use('*', (req, res) => {
 // Routes
 
 // Error handling
+app.use(errorHandler);
 
 async function startServer() {
     try {
