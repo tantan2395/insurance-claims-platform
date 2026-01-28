@@ -1,0 +1,20 @@
+{
+  "version": "5",
+  "dialect": "pg",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1769481838669,
+      "tag": "0000_dark_prima",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1769521041887,
+      "tag": "0001_fast_morbius",
+      "breakpoints": true
+    }
+  ]
+}
