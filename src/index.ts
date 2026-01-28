@@ -57,7 +57,7 @@ app.use('/api', routes);
 app.use(notFoundHandler);
 // Error handling
 app.use(errorHandler);
-
+ 
 async function startServer() {
     try {
         // Initialize database
@@ -65,6 +65,8 @@ async function startServer() {
 
         // Initialize Redis
         await setupRedis();
+
+        console.log("PORT --->", env.PORT)
 
         app.listen(env.PORT, () => {
             logger.info(`Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);

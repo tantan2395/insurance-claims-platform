@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.middleware';
 import { authRoutes } from '../controllers/auth.controller';
 import { organizationRoutes } from '../controllers/organization.controller';
 import { patientRoutes } from '../controllers/patient.controller';
+import { claimRoutes } from '../controllers/claim.controller';
 
 const router = Router();
 
@@ -43,5 +44,15 @@ router.post('/patients/:id/link-user', patientRoutes.linkPatientToUser);
 
 router.post('/patient-status', patientRoutes.createPatientStatusChange);
 router.get('/patient-status/history/:patientId', patientRoutes.getPatientStatusHistory);
+
+router.post('/claims', claimRoutes.createClaim);
+router.get('/claims', claimRoutes.getClaims);
+router.get('/claims/stats', claimRoutes.getClaimStats);
+router.get('/claims/:id', claimRoutes.getClaim);
+router.patch('/claims/:id/status', claimRoutes.updateClaimStatus);
+router.post('/claims/bulk-status-update', claimRoutes.bulkUpdateStatus);
+router.patch('/claims/:id', claimRoutes.updateClaim);
+router.post('/claims/:id/assign', claimRoutes.assignClaim);
+router.get('/claims/:id/history', claimRoutes.getClaimStatusHistory);
 
 export default router;

@@ -3,8 +3,8 @@ import jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import env from '../config';
 import { db } from '../config/database';
-import { users, organizations } from '../models/schema';
-import { eq } from 'drizzle-orm';
+import { users, organizations, providers, patients } from '../models/schema';
+import { and, eq } from 'drizzle-orm';
 import {
   UnauthorizedError,
   ValidationError,
@@ -118,51 +118,139 @@ export class AuthService {
       .select()
       .from(users)
       .where(
-        eq(users.email, userData.email)
+        and(
+          eq(users.email, userData.email),
+          eq(users.organizationId, organization.id)
+        )
       )
       .limit(1);
 
     if (existingUser) {
-      throw new ConflictError('User already exists');
+      throw new ConflictError('User already exists in this organization');
     }
 
     // Hash password
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(userData.password, saltRounds);
 
-    // Create user
-    const [user] = await db
-      .insert(users)
-      .values({
-        organizationId: organization.id,
-        email: userData.email,
-        passwordHash,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        role: userData.role,
-        metadata: userData.metadata || {},
-      })
-      .returning();
+    // Start transaction for user creation and related records
+    const result = await db.transaction(async (tx) => {
+      // Create user
+      const [user] = await tx
+        .insert(users)
+        .values({
+          organizationId: organization.id,
+          email: userData.email,
+          passwordHash,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          role: userData.role,
+          metadata: userData.metadata || {},
+        })
+        .returning();
 
-    if (!user) {
-      throw new Error('Failed to create user');
-    }
+      if (!user) {
+        throw new Error('Failed to create user');
+      }
 
-    // Generate token
-    const token = this.generateToken(user);
-    const expiresIn = this.getTokenExpiration();
+      // Create provider or patient record based on role
+      let providerRecord = null;
+      let patientRecord = null;
 
-    // Remove sensitive data
-    const { passwordHash: _, ...userWithoutPassword } = user;
+      if (userData.role === 'provider') {
+        // Create provider record
+        const [provider] = await tx
+          .insert(providers)
+          .values({
+            organizationId: organization.id,
+            userId: user.id,
+            name: `${userData.firstName} ${userData.lastName}`,
+            type: userData.metadata?.providerType || 'individual',
+            licenseNumber: userData.metadata?.licenseNumber || null,
+            email: userData.email,
+          })
+          .returning();
 
-    return {
-      user: {
-        ...userWithoutPassword,
-        organization,
-      },
-      token,
-      expiresIn,
-    };
+        providerRecord = provider;
+
+        // Update user metadata with provider ID
+        await tx
+          .update(users)
+          .set({
+            metadata: {
+              ...user.metadata,
+              providerId: provider.id,
+            },
+          })
+          .where(eq(users.id, user.id));
+
+        user.metadata = { ...user.metadata, providerId: provider.id };
+
+      } else if (userData.role === 'patient') {
+        // Validate patient-specific data
+        if (!userData.metadata?.dateOfBirth) {
+          throw new ValidationError('Date of birth is required for patient registration');
+        }
+
+        // Create patient record
+        const [patient] = await tx
+          .insert(patients)
+          .values({
+            organizationId: organization.id,
+            userId: user.id,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            dateOfBirth: new Date(userData.metadata.dateOfBirth),
+            email: userData.email,
+            phone: userData.metadata?.phone || null,
+            address: userData.metadata?.address || null,
+            insuranceMemberId: userData.metadata?.insuranceMemberId || null,
+          })
+          .returning();
+
+        patientRecord = patient;
+
+        // Update user metadata with patient ID
+        await tx
+          .update(users)
+          .set({
+            metadata: {
+              ...user.metadata,
+              patientId: patient.id,
+            },
+          })
+          .where(eq(users.id, user.id));
+
+        user.metadata = { ...user.metadata, patientId: patient.id };
+      }
+
+      // Generate token
+      const token = this.generateToken(user);
+      const expiresIn = this.getTokenExpiration();
+
+      // Remove sensitive data
+      const { passwordHash: _, ...userWithoutPassword } = user;
+
+      return {
+        user: {
+          ...userWithoutPassword,
+          organization,
+          provider: providerRecord,
+          patient: patientRecord,
+        },
+        token,
+        expiresIn,
+      };
+    });
+
+    logger.info('User registered successfully', {
+      userId: result.user.id,
+      email: userData.email,
+      role: userData.role,
+      organization: organization.name,
+    });
+
+    return result;
   }
 
   async changePassword(
