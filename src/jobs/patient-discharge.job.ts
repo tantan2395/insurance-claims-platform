@@ -14,7 +14,7 @@ export interface PatientDischargeJobData {
 }
 
 export async function processPatientDischarge(job: Job<PatientDischargeJobData>): Promise<void> {
-  const { patientId, organizationId, statusChangeId, details } = job.data;
+  const { patientId, organizationId, statusChangeId } = job.data;
   
   logger.info('Processing patient discharge job', {
     jobId: job.id,
@@ -25,7 +25,7 @@ export async function processPatientDischarge(job: Job<PatientDischargeJobData>)
 
   try {
     // Find all pending claims for this patient
-    // "Pending" could mean different statuses - let's use under_review and approved
+    // "Pending" could mean different statuses - use under_review and approved
     const pendingClaims = await db
       .select()
       .from(claims)
@@ -43,7 +43,7 @@ export async function processPatientDischarge(job: Job<PatientDischargeJobData>)
     });
 
     // Move to "paid" (auto-finalize) or keep as approved based on business rules
-    // For simplicity, we'll move under_review to approved, and approved to paid
+    // For simplicity,  move under_review to approved, and approved to paid
     const claimsToApprove = pendingClaims.filter(claim => claim.status === 'under_review');
     const claimsToPay = pendingClaims.filter(claim => claim.status === 'approved');
 

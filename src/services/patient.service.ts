@@ -331,6 +331,4 @@ export class PatientService {
             patientId: statusChange.patientId,
         });
     }
-
-
 }

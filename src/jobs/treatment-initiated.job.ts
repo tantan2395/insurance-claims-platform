@@ -1,7 +1,7 @@
 import { Job } from 'bullmq';
 import { db } from '../config/database';
 import { claims, patientStatusChanges } from '../models/schema';
-import { eq, and, inArray, or } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 
 export interface TreatmentInitiatedJobData {
@@ -27,7 +27,7 @@ export async function processTreatmentInitiated(job: Job<TreatmentInitiatedJobDa
   try {
     // Business logic: Find claims related to this treatment
     // This could be based on diagnosis code, provider, treatment type, etc.
-    // For now, we'll find all claims for this patient that are not completed
+    // For now, just find all claims for this patient that are not completed
     
     const relatedClaims = await db
       .select()
@@ -59,7 +59,7 @@ export async function processTreatmentInitiated(job: Job<TreatmentInitiatedJobDa
           status: 'under_review',
           reviewDate: new Date(),
           updatedAt: new Date(),
-          // You could add treatment-specific metadata
+          // just add treatment-specific metadata
           metadata: {
             ...claims.metadata,
             lastTreatmentReview: {

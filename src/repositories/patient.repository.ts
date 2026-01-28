@@ -110,34 +110,33 @@ export class PatientRepository extends BaseRepository<typeof patients> {
         withUserAccount: number;
     }> {
 
-        const [active] = await db
-            .select({ count: count() })
-            .from(this.table)
-            .where(and(
-                this.withTenant(),
-                eq(this.table.isActive, true)
-            ));
-
-
-        const [withUserAccount] = await db
-            .select({ count: count() })
-            .from(this.table)
-            .where(and(
-                this.withTenant(),
-                isNotNull(this.table.userId)
-            ))
-
-        const [total] = await db
-            .select({
-                count: count(),
-            })
-            .from(this.table)
-            .where(this.withTenant());
+        const [active, withUserAccount, total] = await Promise.all([
+            db
+                .select({ count: count() })
+                .from(this.table)
+                .where(and(
+                    this.withTenant(),
+                    eq(this.table.isActive, true)
+                )),
+            db
+                .select({ count: count() })
+                .from(this.table)
+                .where(and(
+                    this.withTenant(),
+                    isNotNull(this.table.userId)
+                )),
+            db
+                .select({
+                    count: count(),
+                })
+                .from(this.table)
+                .where(this.withTenant())
+        ])
 
         return {
-            total: Number(total?.count ?? 0),
-            active: Number(active?.count ?? 0),
-            withUserAccount: Number(withUserAccount?.count ?? 0),
+            total: Number(total[0]?.count ?? 0),
+            active: Number(active[0]?.count ?? 0),
+            withUserAccount: Number(withUserAccount[0]?.count ?? 0),
         };
     }
 }
